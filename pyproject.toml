@@ -1,0 +1,19 @@
+[project]
+name = "graph-plotting-mcp"
+version = "0.1.0"
+description = "This is a MCP to support graph-plotting functions for the program."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=1.25.0",
+    "matplotlib>=3.8.0",
+    "httpx>=0.24.0",
+    "pandas",
+    "seaborn",
+    "mcp",
+    "langchain",
+    "langchain_openai",
+    "pydantic",
+    "langchain_core",
+    "nest_asyncio"
+]
