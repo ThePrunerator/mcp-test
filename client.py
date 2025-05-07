@@ -51,15 +51,17 @@ async def setup_llm(session: ClientSession) -> ChatOpenAI:
 
     return model_with_tools
 
-# AsyncOpenAI(base_url="http://192.168.1.108:80/v1", api_key="token-abc123")
-
 async def main():
-    async with sse_client("http://localhost:8050/sse") as (read_stream, write_stream):
-        async with ClientSession(read_stream, write_stream) as session:
-            await session.initialize()
-            model = await setup_llm(session)
-            response = model.invoke([HumanMessage(content="What's cooking, good looking? What functions do you have access to?")])
-            print(response.content)
+    content = input("Enter message: ")
+
+    while content != "END":
+        async with sse_client("http://localhost:8050/sse") as (read_stream, write_stream):
+            async with ClientSession(read_stream, write_stream) as session:
+                await session.initialize()
+                model = await setup_llm(session)
+                response = model.invoke([HumanMessage(content=content)])
+                print(response.content)
+                content = input("Enter message: ")
 
 ######################################### Main #########################################
 if __name__ == "__main__":
