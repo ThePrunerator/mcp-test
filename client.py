@@ -1,5 +1,7 @@
 import asyncio
 import nest_asyncio
+import pandas as pd
+import matplotlib.pyplot as plt
 
 # MCP-related libraries
 from mcp import ClientSession
@@ -36,9 +38,9 @@ async def setup_llm(session: ClientSession) -> ChatOpenAI:
         })
 
     chat_model = ChatOpenAI(
-        model="qwen2.5",
+        model="QwQ-32B",
         openai_api_key="not-needed",
-        openai_api_base="http://192.168.1.108:80/v1",
+        openai_api_base="http://192.168.1.222:1999/v1",
         temperature="0.7",
     )
 
@@ -51,7 +53,7 @@ async def setup_llm(session: ClientSession) -> ChatOpenAI:
     return model_with_tools
 
 async def send_query_to_llm(csv_data):
-    content = "With reference to the following CSV data, please help me plot a relevant graph to better visualise the results.\n" + csv_data
+    content = f"With reference to the following CSV data columns, please help me plot a relevant graph to better visualise the results.\n \n{csv_data.columns}"
     async with sse_client("http://localhost:8050/sse") as (read_stream, write_stream):
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()
@@ -61,15 +63,16 @@ async def send_query_to_llm(csv_data):
 
 def read_csv_data(file_path: str) -> str:
     '''
-    Reads CSV file data and returns the output as a string.
+    Reads CSV file data and returns the output as a DataFrame.
     '''
-    with open(file_path, "r") as f:
-        data = f.read()
+    data = pd.read_csv(file_path)
+    data.columns.str.replace('.', '_', regex=False)  # Replace '.' with '_' in column names
+    data.columns.str.replace(' ', '_', regex=False)  # Replace ' ' with '_' in column names
 
     return data
 
 ######################################### Main #########################################
 if __name__ == "__main__":
-    file_path = ".\\data\\Monthly_Sales_Data"
+    file_path = ".\\test.csv"
     data = read_csv_data(file_path)
     asyncio.run(send_query_to_llm(data))
