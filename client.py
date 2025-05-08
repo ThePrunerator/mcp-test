@@ -9,7 +9,7 @@ from mcp.client.sse import sse_client
 
 # All langchain-related libraries
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 
 nest_asyncio.apply()  # Needed to run interactive python
 
@@ -64,8 +64,13 @@ async def send_query_to_llm(df):
     async with sse_client("http://localhost:8050/sse") as (read_stream, write_stream):
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()
-            model = await setup_llm(session)
-            response = model.invoke([HumanMessage(content=content)])
+            model = await setup_llm(session)            
+            messages = [
+                SystemMessage(content=content),
+                HumanMessage(content="Plot a corresponding graph based on the given dataset..")
+            ]
+
+            response = model.invoke(messages)
             print(response)
             print(); print()
             print(response.content)

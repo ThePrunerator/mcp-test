@@ -60,8 +60,20 @@ def get_knowledge_base() -> str:
         return f"Error: {str(e)}"
 
 @mcp.tool()
+def read_csv_data(file_path: str) -> str:
+    '''
+    Reads CSV file data and returns the output as a DataFrame.
+    '''
+    data = pd.read_csv(file_path)
+    data.columns.str.replace('.', '_', regex=False)  # Replace '.' with '_' in column names
+    data.columns.str.replace(' ', '_', regex=False)  # Replace ' ' with '_' in column names
+    return data
+
+@mcp.tool()
 def plot_graph(spec : str, query : str) -> None:
     """Plot a graph using the provided x and y coordinates."""
+
+    data = read_csv_data("test.csv")
 
     plt.figure(figsize=(10, 6))
     if spec.chart == "count":               
