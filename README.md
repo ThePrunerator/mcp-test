@@ -1,6 +1,20 @@
-# 🧠 LLM Tool-Calling Assistant with MCP Integration
+<h1 align="center">🧠 LLM Tool-Calling Assistant with MCP Integration</h1>
+<p align="center">
+  <b>Connect your local LLM to real-world tools, knowledge bases, and APIs via MCP.</b>
+</p>
+<p align="center">
+  <img src="https://img.shields.io/badge/MCP%20Support-Enabled-blue?style=flat-square" />
+  <img src="https://img.shields.io/badge/LLM%20Backend-OpenAI%20or%20Local-brightgreen?style=flat-square" />
+  <img src="https://img.shields.io/badge/Tool%20Calling-Automated-ff69b4?style=flat-square" />
+  <img src="https://img.shields.io/badge/Python-3.8+-yellow?style=flat-square" />
+</p>
 
-This project connects a local LLM (e.g. Qwen) to tools such as a calculator or a knowledge base via the [MCP](https://github.com/OpenBioLink/mcp) protocol. The assistant automatically detects and calls these tools to help answer user queries.
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/74038190/225813708-98b745f2-7d22-48cf-9150-083f1b00d6c9.gif" width="450">
+</p>
+
+
+This project connects a local LLM (e.g. Qwen) to tools such as a calculator or a knowledge base via the [MCP](https://github.com/modelcontextprotocol) protocol. The assistant automatically detects and calls these tools to help answer user queries.
 
 ---
 

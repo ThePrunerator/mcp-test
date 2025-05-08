@@ -3,15 +3,8 @@ from dotenv import load_dotenv
 import os, json
 import matplotlib.pyplot as plt
 import seaborn as sns
-import textwrap
 import pandas as pd
-import sqlite3
-
-from pydantic import BaseModel, Field
-from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-from pydantic import BaseModel, Field
-from langchain_core.output_parsers import PydanticOutputParser
+import textwrap
 
 load_dotenv("../.env")
 
@@ -21,6 +14,28 @@ mcp = FastMCP(
     host="0.0.0.0",  # only used for SSE transport (localhost)
     port=8050,  # only used for SSE transport (set this to any port)
 )
+
+
+# Add a simple calculator tool
+@mcp.tool()
+def add(a: int, b: int) -> int:
+    """Add two numbers together"""
+    return a + b
+
+@mcp.tool()
+def subtract(a: int, b: int) -> int:
+    """Subtracting the second number from the first"""
+    return a - b
+
+@mcp.tool()
+def divide(a: int, b: int) -> int:
+    """Dividing the first number by the second"""
+    return a / b
+
+@mcp.tool()
+def multiply(a: int, b: int) -> int:
+    """Multiply two numbers together"""
+    return a * b
 
 @mcp.tool()
 def get_knowledge_base() -> str:
@@ -59,21 +74,21 @@ def get_knowledge_base() -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
+from pydantic import BaseModel
+from typing import Literal, Optional
+
+class PlotSpec(BaseModel):
+    chart: Literal["count", "bar", "hist", "box", "scatter", "line"]
+    x:     str
+    y:     Optional[str] = None
+    hue:   Optional[str] = None
+
 @mcp.tool()
-def read_csv_data(file_path: str) -> str:
-    '''
-    Reads CSV file data and returns the output as a DataFrame.
-    '''
+def plot_graph(file_name : str, spec : PlotSpec, query : str) -> None:
+    """Plot a graph using the provided queries."""
+
+    file_path = os.path.join("data", file_name)
     data = pd.read_csv(file_path)
-    data.columns.str.replace('.', '_', regex=False)  # Replace '.' with '_' in column names
-    data.columns.str.replace(' ', '_', regex=False)  # Replace ' ' with '_' in column names
-    return data
-
-@mcp.tool()
-def plot_graph(spec : str, query : str) -> None:
-    """Plot a graph using the provided x and y coordinates."""
-
-    data = read_csv_data("test.csv")
 
     plt.figure(figsize=(10, 6))
     if spec.chart == "count":               
@@ -95,11 +110,12 @@ def plot_graph(spec : str, query : str) -> None:
     plt.title(textwrap.fill(query, 60))
     plt.xticks(rotation=45)
     plt.tight_layout()
-    plt.show()
+    plt.savefig("output.png")
+    plt.close()
 
 # Run the server
 if __name__ == "__main__":
-    transport = "sse"
+    transport = "stdio"
     if transport == "stdio":
         print("Running server with stdio transport")
         mcp.run(transport="stdio")
