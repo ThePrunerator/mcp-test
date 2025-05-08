@@ -19,8 +19,12 @@ mcp = FastMCP(
 #     """
 #     Retrieve the entire knowledge base as a formatted string.
 
-#     :returns: A formatted string containing all Q&A pairs from the knowledge base.
-#     """
+# @mcp.tool()
+# def get_knowledge_base() -> str:
+#     """Retrieve the entire knowledge base as a formatted string.
+
+# #     :returns: A formatted string containing all Q&A pairs from the knowledge base.
+# #     """
 #     try:
 #         kb_path = os.path.join(os.path.dirname(__file__), "data.json")
 #         with open(kb_path, "r") as f:
@@ -51,15 +55,28 @@ mcp = FastMCP(
 #     except Exception as e:
 #         return f"Error: {str(e)}"
 
+
+
+# @mcp.tool()
+# def add(a, b):
+#     return int(a) + int(b)
+
+@mcp.tool()
+def get_csv_data_columns(file_name : str) -> str:
+    """Get the data from a CSV file."""
+    file_path = os.path.join("data", file_name)
+    try:
+        data = pd.read_csv(file_path)
+        columns = data.columns.tolist()
+        return json.dumps(columns)
+    except Exception as e:
+        return f"Error reading CSV file: {str(e)}"
+
 class PlotSpec(BaseModel):
     chart: Literal["count", "bar", "hist", "box", "scatter", "line"]
     x:     str
     y:     str
     hue:   Optional[str] = None
-
-# @mcp.tool()
-# def add(a, b):
-#     return int(a) + int(b)
 
 @mcp.tool()
 def plot_graph(file_name : str, spec : PlotSpec, query : str) -> None:

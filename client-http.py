@@ -97,7 +97,7 @@ async def call_local_llm(messages: List[Dict[str, Any]], tools: List[Dict[str, A
 
                 result = await session.call_tool(tool_name, tool_args)
                 print(f"Tool result: {result}")
-
+                
                 result_text = result.content[0].text if result.content else "Tool returned no content."
 
                 messages.append({
@@ -112,18 +112,6 @@ async def process_query(query: str) -> str:
 
     tools = await get_mcp_tools()
 
-    m = re.search(r'\bfile\s*[:=]?\s*([^\s,;]+\.csv)\b', query, re.IGNORECASE)
-    file_name = m.group(1) if m else "test.csv"
-
-    file_path = os.path.join("data", file_name)
-    try:
-        df = pd.read_csv(file_path)
-        cols = df.columns.tolist()
-    except Exception:
-        cols = []
-
-    tools = await get_mcp_tools()
-
     tool_descriptions = "\n".join(
         [f"{t['function']['name']}: {t['function']['description']}" for t in tools]
     )
@@ -132,12 +120,19 @@ async def process_query(query: str) -> str:
         "You are an assistant. You can call the following tools when needed:\n"
         f"{tool_descriptions}\n"
         "When you need to use a tool, respond naturally using its result.\n"
-        f"When using the plot_graph tool, the file_name must be a CSV file.\n"
-        f"When using the plot_graph tool, ensure that the spec is valid. "
-        f"When using the plot_graph tool, ensure that the x-field and y-field are parsed, and that they are not the same as each other. "
-
-        f"The following columns are available in `{file_name}`: {', '.join(cols)}\n"
+        "Instead of confirming or clarifying the request with the user, you can directly call the tool and return the result.\n"
+        "When using the plot_graph tool, ensure the x and y fields are different and they exist in the column list.\n"
+        "Reply only in English.\n"
     )
+
+    if any(t["function"]["name"] == "plot_graph" for t in tools):
+        system_msg += (
+            "\n[Note on plot_graph] Before you call plot_graph:\n"
+            "  • Ensure the file_name is a CSV file.\n"
+            "  • Ensure the spec is valid and the columns exist in the data.\n"
+            "  • Always invoke get_csv_data_columns on your CSV first.\n"
+            "  • Make sure your `x` and `y` fields are different and actually exist in the column list.\n"
+        )
 
     messages = [
         {"role": "system", "content": system_msg},
