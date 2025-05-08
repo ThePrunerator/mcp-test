@@ -1,11 +1,12 @@
 from mcp.server.fastmcp import FastMCP
-import os, json
+import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import textwrap
 from pydantic import BaseModel
 from typing import Literal, Optional
+import json
 
 # Create a MCP server
 mcp = FastMCP(
@@ -107,6 +108,21 @@ def plot_graph(file_name : str, spec : PlotSpec, query : str) -> None:
     plt.tight_layout()
     plt.savefig("output.png")
     plt.close()
+
+@mcp.tool()
+def look_for_csv(file_name: str) -> str:
+    '''
+    Searches for & returns the full file path for the file name
+    input as parameter.
+
+    :param file_name: Name of file to search for.
+    :return" Full file path to image.
+    '''
+    curr_dir = os.getcwd()
+    for folder, subfolders, files in os.walk(curr_dir):
+        for file in files:
+            if file == file_name:
+                return os.path.join(folder, file)
 
 # Run the server
 if __name__ == "__main__":
