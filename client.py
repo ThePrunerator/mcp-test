@@ -1,0 +1,104 @@
+import asyncio
+import nest_asyncio
+import pandas as pd
+import matplotlib.pyplot as plt
+import json
+
+# MCP-related libraries
+from mcp import ClientSession
+from mcp.client.sse import sse_client
+
+# All langchain-related libraries
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages.function import FunctionMessage
+
+nest_asyncio.apply()  # Needed to run interactive python
+
+######################################### Functions #########################################
+async def setup_llm(session: ClientSession) -> ChatOpenAI:
+    '''
+    Set up a connection to the QwQ-32B model with tools loaded.
+
+    :param session: Session that server is loaded into.
+    :return: Model object to establish communication between user and LLM.
+    '''
+    all_tools = (await session.list_tools()).tools
+
+    openai_tools = []
+    for t in all_tools:
+        # build a proper OpenAI function schema
+        params = {
+            "title":       t.name,
+            "description": t.description,
+            **t.inputSchema,
+        }
+        openai_tools.append({
+            "name":       t.name,
+            "description":t.description,
+            "parameters":params,
+        })
+
+    chat_model = ChatOpenAI(
+        model="QwQ-32B",
+        openai_api_key="not-needed",
+        openai_api_base="http://192.168.1.222:1999/v1",
+        temperature="0.7",
+    )
+
+    model_with_tools = chat_model.bind_tools(
+        tools = openai_tools,
+        tool_choice="required",
+        strict=True
+    )
+
+    return model_with_tools
+
+async def send_query_to_llm(df):
+    content = f""" You are an assistant that turns a user request into:\n
+                • a single SQL query for the SQLite table named 'data'\n
+                • a JSON spec for plotting with seaborn/matplotlib, following the schema below.\n
+                • The x and y labels are mandatory, and they cannot be the same. \n
+                • In any case where there are less than 2 fields specified, decide on a suitable value as the corresponding x/y-field. \n
+                • Take note: the only available columns of data are {df.columns}. \n
+                • Take note: the corresponding value types are {df.dtypes}. \n """
+
+    async with sse_client("http://localhost:8050/sse") as (read_stream, write_stream):
+        async with ClientSession(read_stream, write_stream) as session:
+            await session.initialize()
+            model = await setup_llm(session)            
+            messages = [
+                SystemMessage(content=content),
+                HumanMessage(content="Plot a corresponding graph based on the given dataset..")
+            ]
+
+            response = model.invoke(messages)
+            
+            for call in response.tool_calls:
+                if call["name"] == "read_csv_data":
+                    result = read_csv_data(**call["args"])
+
+                messages.append(FunctionMessage(
+                    name=call["name"],
+                    content=json.dumps(result, default=str)
+                ))
+
+            # 4) final pass to get text
+            final = model.invoke(messages)
+            print("\n\n" + final)
+
+def read_csv_data(file_path: str) -> str:
+    '''
+    Reads CSV file data and returns the output as a DataFrame.
+    '''
+    data = pd.read_csv(file_path)
+    data.columns.str.replace('.', '_', regex=False)  # Replace '.' with '_' in column names
+    data.columns.str.replace(' ', '_', regex=False)  # Replace ' ' with '_' in column names
+
+    return data
+
+######################################### Main #########################################
+if __name__ == "__main__":
+    file_path = ".\\test.csv"
+    data = read_csv_data(file_path)
+    asyncio.run(send_query_to_llm(data))
