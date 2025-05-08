@@ -1,1 +1,2 @@
-output.png
+# Ignore all output PNG files
+**/*.png
