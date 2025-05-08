@@ -2,6 +2,7 @@ import asyncio
 import nest_asyncio
 import pandas as pd
 import matplotlib.pyplot as plt
+import json
 
 # MCP-related libraries
 from mcp import ClientSession
@@ -10,6 +11,7 @@ from mcp.client.sse import sse_client
 # All langchain-related libraries
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages.function import FunctionMessage
 
 nest_asyncio.apply()  # Needed to run interactive python
 
@@ -47,7 +49,7 @@ async def setup_llm(session: ClientSession) -> ChatOpenAI:
     model_with_tools = chat_model.bind_tools(
         tools = openai_tools,
         tool_choice="required",
-        strict=False
+        strict=True
     )
 
     return model_with_tools
@@ -71,10 +73,19 @@ async def send_query_to_llm(df):
             ]
 
             response = model.invoke(messages)
-            print(response)
-            print(); print()
-            print(response.content)
-            print("I am an ass.")
+            
+            for call in response.tool_calls:
+                if call["name"] == "read_csv_data":
+                    result = read_csv_data(**call["args"])
+
+                messages.append(FunctionMessage(
+                    name=call["name"],
+                    content=json.dumps(result, default=str)
+                ))
+
+            # 4) final pass to get text
+            final = model.invoke(messages)
+            print("\n\n" + final)
 
 def read_csv_data(file_path: str) -> str:
     '''
