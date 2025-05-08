@@ -14,5 +14,6 @@ dependencies = [
     "pandas",
     "langchain_openai",
     "langchain_core",
-    "seaborn"
+    "seaborn",
+    "streamlit"
 ]

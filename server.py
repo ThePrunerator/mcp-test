@@ -6,7 +6,13 @@ import pandas as pd
 import textwrap
 from pydantic import BaseModel
 from typing import Literal, Optional
-import json
+import json, asyncio
+
+import sys
+
+if sys.platform.startswith("win"):
+    # use the ProactorEventLoop on Windows so that create_subprocess_exec works
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 # Create a MCP server
 mcp = FastMCP(
@@ -31,6 +37,21 @@ class PlotSpec(BaseModel):
     x:     str
     y:     Optional[str] = None
     hue:   Optional[str] = None
+
+@mcp.tool()
+def find_all_data_files() -> list[str]:
+    '''
+    Gets all CSV files in the current directory (and subfolders) and returns their full paths.
+    '''
+    dir = os.getcwd()
+    to_return = []
+
+    for folder, subfolder, files in os.walk(dir):
+        for file in files:
+            if ".csv" in file:
+                to_return.append(os.path.join(folder, file))
+
+    return to_return
 
 @mcp.tool()
 def plot_graph(file_name : str, spec : PlotSpec, query : str) -> None:
@@ -71,11 +92,18 @@ def look_for_csv(file_name: str) -> str:
     :param file_name: Name of file to search for.
     :return" Full file path to image.
     '''
-    curr_dir = os.getcwd()
+    curr_dir = ".\\data"
     for folder, subfolders, files in os.walk(curr_dir):
         for file in files:
             if file == file_name:
                 return os.path.join(folder, file)
+            
+@mcp.tool()
+def get_cwd() -> str:
+    '''
+    Gets the current working directory.
+    '''
+    return os.getcwd()
 
 # Run the server
 if __name__ == "__main__":

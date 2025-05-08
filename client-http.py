@@ -2,11 +2,17 @@ import asyncio
 import json
 from contextlib import AsyncExitStack
 from typing import Any, Dict, List
-import pandas as pd
-import re, os
 import aiohttp
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+import streamlit as st
+
+import sys
+
+if sys.platform.startswith("win"):
+    # use the ProactorEventLoop on Windows so that create_subprocess_exec works
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 
 session = None
 exit_stack = AsyncExitStack()
@@ -149,33 +155,31 @@ async def cleanup():
     await exit_stack.aclose()
 
 
-async def main():
+async def send_query_to_llm(query: str) -> str:
     """Main entry point for the client."""
     await connect_to_server("server.py")
-
-    while True:
-        try:
-            query = input("\nEnter your query (or 'exit' to quit): ")
-
-            if query.lower() == 'exit':
-                print("Exiting...")
-                break
-
-            print(f"\nQuery: {query}")
-
-            response = await process_query(query)
-            print(f"\nResponse: {response}")
-
-        except KeyboardInterrupt:
-            print("\nSession interrupted. Exiting...")
-            break
-        except Exception as e:
-            print(f"\nAn error occurred: {e}")
-
+    print(f"\nQuery: {query}")
+    response = await process_query(query)
+    print(f"\nResponse: {response}")
     await cleanup()
+    return response
 
+async def main():
+    st.title("Chatbot")
+    st.caption("A streamlit chatbot powered by NG YEE TECK")
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+
+    for msg in st.session_state.messages:
+        st.chat_message(msg["role"]).write(msg["content"])
+
+    if prompt := st.chat_input():
+        st.chat_message("user").write(prompt)
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        response = await send_query_to_llm(prompt)
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        st.chat_message("assistant").write(response)
 
 if __name__ == "__main__":
     print(">>> Client started")
     asyncio.run(main())
-    
