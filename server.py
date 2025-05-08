@@ -77,7 +77,7 @@ from typing import Literal, Optional
 class PlotSpec(BaseModel):
     chart: Literal["count", "bar", "hist", "box", "scatter", "line"]
     x:     str
-    y:     Optional[str] = None
+    y:     str
     hue:   Optional[str] = None
 
 @mcp.tool()

@@ -156,6 +156,8 @@ async def process_query(query: str) -> str:
         "When you need to use a tool, respond naturally using its result.\n"
         f"When using the plot_graph tool, the file_name must be a CSV file.\n"
         f"When using the plot_graph tool, ensure that the spec is valid. "
+        f"When using the plot_graph tool, ensure that the x-field and y-field are parsed, and that they are not the same as each other. "
+
         f"The following columns are available in `{file_name}`: {', '.join(cols)}\n"
     )
 
