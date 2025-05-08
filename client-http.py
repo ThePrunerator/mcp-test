@@ -180,6 +180,10 @@ async def main():
         st.session_state.messages.append({"role": "assistant", "content": response})
         st.chat_message("assistant").write(response)
 
+        if "Image has been created." in response:
+            st.image("output.png")
+    
+
 if __name__ == "__main__":
     print(">>> Client started")
     asyncio.run(main())

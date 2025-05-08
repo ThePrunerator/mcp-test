@@ -55,7 +55,11 @@ def find_all_data_files() -> list[str]:
 
 @mcp.tool()
 def plot_graph(file_name : str, spec : PlotSpec, query : str) -> None:
-    """Plot a graph using the provided queries."""
+    """
+    Plot a graph using the provided queries.
+    Output "Image has been created." in your response string
+    when a new output.png image has been created.
+    """
 
     file_path = os.path.join("data", file_name)
     data = pd.read_csv(file_path)
