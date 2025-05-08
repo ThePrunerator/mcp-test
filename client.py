@@ -7,7 +7,6 @@ from mcp.client.sse import sse_client
 
 # All langchain-related libraries
 from langchain_openai import ChatOpenAI
-from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_core.messages import HumanMessage
 
 nest_asyncio.apply()  # Needed to run interactive python
@@ -51,18 +50,26 @@ async def setup_llm(session: ClientSession) -> ChatOpenAI:
 
     return model_with_tools
 
-async def main():
-    content = input("Enter message: ")
+async def send_query_to_llm(csv_data):
+    content = "With reference to the following CSV data, please help me plot a relevant graph to better visualise the results.\n" + csv_data
+    async with sse_client("http://localhost:8050/sse") as (read_stream, write_stream):
+        async with ClientSession(read_stream, write_stream) as session:
+            await session.initialize()
+            model = await setup_llm(session)
+            response = model.invoke([HumanMessage(content=content)])
+            print(response.content)
 
-    while content != "END":
-        async with sse_client("http://localhost:8050/sse") as (read_stream, write_stream):
-            async with ClientSession(read_stream, write_stream) as session:
-                await session.initialize()
-                model = await setup_llm(session)
-                response = model.invoke([HumanMessage(content=content)])
-                print(response.content)
-                content = input("Enter message: ")
+def read_csv_data(file_path: str) -> str:
+    '''
+    Reads CSV file data and returns the output as a string.
+    '''
+    with open(file_path, "r") as f:
+        data = f.read()
+
+    return data
 
 ######################################### Main #########################################
 if __name__ == "__main__":
-    asyncio.run(main())
+    file_path = ".\\data\\Monthly_Sales_Data"
+    data = read_csv_data(file_path)
+    asyncio.run(send_query_to_llm(data))
