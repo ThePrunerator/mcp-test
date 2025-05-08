@@ -52,8 +52,15 @@ async def setup_llm(session: ClientSession) -> ChatOpenAI:
 
     return model_with_tools
 
-async def send_query_to_llm(csv_data):
-    content = f"With reference to the following CSV data columns, please help me plot a relevant graph to better visualise the results.\n \n{csv_data.columns}"
+async def send_query_to_llm(df):
+    content = f""" You are an assistant that turns a user request into:\n
+                • a single SQL query for the SQLite table named 'data'\n
+                • a JSON spec for plotting with seaborn/matplotlib, following the schema below.\n
+                • The x and y labels are mandatory, and they cannot be the same. \n
+                • In any case where there are less than 2 fields specified, decide on a suitable value as the corresponding x/y-field. \n
+                • Take note: the only available columns of data are {df.columns}. \n
+                • Take note: the corresponding value types are {df.dtypes}. \n """
+
     async with sse_client("http://localhost:8050/sse") as (read_stream, write_stream):
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()

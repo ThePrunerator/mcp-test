@@ -60,77 +60,9 @@ def get_knowledge_base() -> str:
         return f"Error: {str(e)}"
 
 @mcp.tool()
-def llm_plot_graph(query : str) -> None:
+def plot_graph(spec : str, query : str) -> None:
     """Plot a graph using the provided x and y coordinates."""
 
-    CSV_PATH = "test.csv"                     
-    df = pd.read_csv(CSV_PATH)
-    df.columns = df.columns.str.replace('.', '_', regex=False)
-
-    # Set up SQL ──────────────────────────────────────────────────────────────────
-    conn = sqlite3.connect("data.db")
-    df.to_sql("data", conn, index=False, if_exists="replace")
-
-    # Set up LLM ──────────────────────────────────────────────────────────────────
-    llm = ChatOpenAI(
-        model="QwQ-32B",                   
-        openai_api_key="not-needed",
-        openai_api_base="http://192.168.1.222:1999/v1",
-        temperature=0.5,
-    )
-
-    # Specify schema for LLM output ──────────────────────────────────────────────────────────────────
-    class RequestSpec(BaseModel):
-        sql: str  = Field(..., description="Valid SQLite query on table 'data'")
-        chart: str = Field(..., description="count | bar | hist | box | scatter | line") # Available chart types
-        x: str
-        y: str 
-        hue: str | None = None
-        filter_expr: str | None = Field(
-            None,
-            description="Optional pandas-query filter applied *after* the SQL.",
-        )
-
-    parser = PydanticOutputParser(pydantic_object=RequestSpec) # To convert LLM's JSON output into Python object
-
-    schema_txt = ", ".join(f"{c} ({t})" for c, t in zip(df.columns, df.dtypes))
-    format_instr = parser.get_format_instructions().replace("{", "{{").replace("}", "}}")
-
-    # Prompt fed into LLM ──────────────────────────────────────────────────────────────────
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "{% raw %}"
-                "You are an assistant that turns a user request into:\n"
-                "  • a single SQL query for the SQLite table named 'data'\n"
-                "  • a JSON spec for plotting with seaborn/matplotlib, following the schema below.\n"
-                "  • The x and y labels are mandatory, and they cannot be the same. \n"
-                "  • In any case where there are less than 2 fields specified, decide on a suitable value as the corresponding x/y-field. \n"
-                f"  • Take note: the only available columns of data are {df.columns}. \n"
-                f"  • Take note: the corresponding value types are {df.dtypes}. \n"
-
-                f"This is the schema that the table uses: {schema_txt}\n\n"
-                f"{format_instr}"
-                "{% endraw %}",
-            ),
-            ("human", "{{ user_request }}"),
-        ],
-        template_format="jinja2",
-    )
-
-    chain = prompt | llm | parser  # Chain of LLM calls 
-
-    spec: RequestSpec = chain.invoke({"user_request": query})
-
-    print("\n🔎 LLM-generated SQL:\n", spec.sql)
-    print("\n🎨 Plot spec:\n", spec)
-
-    data = pd.read_sql_query(spec.sql, conn)
-    if spec.filter_expr:
-        data = data.query(spec.filter_expr)
-
-    # Plotting of requested graph──────────────────────────────────────────────────────────────────
     plt.figure(figsize=(10, 6))
     if spec.chart == "count":               
         sns.countplot(data=data, x=spec.x, hue=spec.hue,
