@@ -46,7 +46,7 @@ async def setup_llm(session: ClientSession) -> ChatOpenAI:
 
     model_with_tools = chat_model.bind_tools(
         tools = openai_tools,
-        tool_choice="auto",
+        tool_choice="required",
         strict=False
     )
 
@@ -59,7 +59,10 @@ async def send_query_to_llm(csv_data):
             await session.initialize()
             model = await setup_llm(session)
             response = model.invoke([HumanMessage(content=content)])
+            print(response)
+            print(); print()
             print(response.content)
+            print("I am an ass.")
 
 def read_csv_data(file_path: str) -> str:
     '''
