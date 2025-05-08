@@ -75,7 +75,7 @@ def get_csv_data_columns(file_name : str) -> str:
 class PlotSpec(BaseModel):
     chart: Literal["count", "bar", "hist", "box", "scatter", "line"]
     x:     str
-    y:     str
+    y:     Optional[str] = None
     hue:   Optional[str] = None
 
 @mcp.tool()
