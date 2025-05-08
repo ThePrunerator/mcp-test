@@ -3,7 +3,7 @@ import json
 from contextlib import AsyncExitStack
 from typing import Any, Dict, List
 import pandas as pd
-import os
+import re, os
 
 import aiohttp
 import nest_asyncio
@@ -22,8 +22,6 @@ write = None
 LOCAL_LLM_URL = "http://192.168.1.108:80/v1/chat/completions"  # URL of your local LLM API endpoint
 TOKEN = "token-abc123"  # Replace with your actual API token
 LOCAL_LLM_MODEL = "qwen2.5"  # Specify the name of the local model to use
-file_path = os.path.join("data", "test.csv")  # Path to your CSV file
-df = pd.read_csv(file_path)  # Load your CSV data here
 
 
 async def connect_to_server(server_script_path: str = "server.py"):
@@ -136,21 +134,33 @@ async def process_query(query: str) -> str:
 
     tools = await get_mcp_tools()
 
+    m = re.search(r'\bfile\s*[:=]?\s*([^\s,;]+\.csv)\b', query, re.IGNORECASE)
+    file_name = m.group(1) if m else "test.csv"
+
+    file_path = os.path.join("data", file_name)
+    try:
+        df = pd.read_csv(file_path)
+        cols = df.columns.tolist()
+    except Exception:
+        cols = []
+
+    tools = await get_mcp_tools()
+
     tool_descriptions = "\n".join(
         [f"{t['function']['name']}: {t['function']['description']}" for t in tools]
     )
 
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                "You are an assistant. You can call the following tools when needed:\n"
-                f"{tool_descriptions}\n"
-                "When you need to use a tool, respond naturally using its result.\n"
+    system_msg = (
+        "You are an assistant. You can call the following tools when needed:\n"
+        f"{tool_descriptions}\n"
+        "When you need to use a tool, respond naturally using its result.\n"
+        f"When using the plot_graph tool, the file_name must be a CSV file.\n"
+        f"When using the plot_graph tool, ensure that the spec is valid. "
+        f"The following columns are available in `{file_name}`: {', '.join(cols)}\n"
+    )
 
-                f"When using the plot_graph tool, ensure that the spec is valid. The following columns are available: {df.columns} \n"
-            ),
-        },
+    messages = [
+        {"role": "system", "content": system_msg},
         {"role": "user", "content": query},
     ]
 
