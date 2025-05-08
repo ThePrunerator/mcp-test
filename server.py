@@ -1,12 +1,9 @@
 from mcp.server.fastmcp import FastMCP
-from dotenv import load_dotenv
 import os, json
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import textwrap
-
-load_dotenv("../.env")
 
 # Create an MCP server
 mcp = FastMCP(

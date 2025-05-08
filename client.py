@@ -1,7 +1,6 @@
 import asyncio
 import nest_asyncio
 import pandas as pd
-import matplotlib.pyplot as plt
 import json
 
 # MCP-related libraries
@@ -99,6 +98,6 @@ def read_csv_data(file_path: str) -> str:
 
 ######################################### Main #########################################
 if __name__ == "__main__":
-    file_path = ".\\test.csv"
+    file_path = ".\\data\\test.csv"
     data = read_csv_data(file_path)
     asyncio.run(send_query_to_llm(data))

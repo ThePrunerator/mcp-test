@@ -1,0 +1,18 @@
+[project]
+name = "graph-plotting-mcp"
+version = "0.1.0"
+description = "Graph-plotting MCP for the QwQ-32B model."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp==1.6.0",
+    "langchain",
+    "aiohttp==3.11.18",
+    "nest_asyncio==1.6.0",
+    "openai==1.77.0",
+    "matplotlib",
+    "pandas",
+    "langchain_openai",
+    "langchain_core",
+    "seaborn"
+]
